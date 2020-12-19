@@ -36,24 +36,27 @@ def create_model(opt, activation="sigmoid"):
     return model
 
 
-def run_test(opt, epochs=10):
+def run_test(epochs, optimizer, lr, activation):
     trainX, trainY, testX, testY = load_data()
 
-    model = create_model(opt=opt, activation="sigmoid")
+    opt = optimizer(lr=lr)
+    model = create_model(opt=opt, activation=activation)
 
     model.fit(trainX, trainY, epochs=epochs, batch_size=256, verbose=1)
-    model.save("mlp.h5")
+    model.save(f"./models/mlp_{epochs}_{opt.__class__.__name__}_{lr}_{activation}.h5")
     res = model.evaluate(testX, (testY))
     return res
 
 
-def main():
+def experiment_1():
     """
     zbadać wpływ funkcji aktywacji (activation=”..”) na jakość uczenia - sprawdzić funkcje aktywacji: sigmoid, hard_sigmoid, tanh, linear, relu, softmax
     zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
     zbadać wpływ optymalizatora {adam,sgd,adadelta,adagrad,rmsprop} na jakość uczenia
     zbadać wpływ kroku uczenia (learning rate) na jakość uczenia
     """
+
+    data = {"optimizer": [], "epochs": [], "lr": [], "activation": [], "loss": [], "acc": []}
 
     learning_rates = [0.05, 0.01, 0.02, 0.1]
     optimizers = [
@@ -63,21 +66,29 @@ def main():
         tf.keras.optimizers.Adagrad,
         tf.keras.optimizers.RMSprop,
     ]
-    data = {"optimizer": [], "lr": [], "loss": [], "acc": []}
+    activations = ["sigmoid", "hard_sigmoid", "tanh", "linear", "relu", "softmax"]
+    epochs = [10, 100]
 
-    for lr in learning_rates:
-        for optimizer in optimizers:
-            opt = optimizer(lr=lr)
-            res = run_test(epochs=10, opt=opt)
+    for e in epochs:
+        for lr in learning_rates:
+            for optimizer in optimizers:
+                for activation in activations:
+                    res = run_test(epochs=e, optimizer=optimizer, lr=lr, activation=activation)
 
-            data["optimizer"].append(opt)
-            data["lr"].append(lr)
-            data["loss"].append(res[0])
-            data["acc"].append(res[1])
+                    data["optimizer"].append(optimizer.__name__)
+                    data["epochs"].append(e)
+                    data["lr"].append(lr)
+                    data["activation"].append(activation)
+                    data["loss"].append(res[0])
+                    data["acc"].append(res[1])
 
     df = pd.DataFrame.from_dict(data)
     print(df)
+    df.to_csv("experiment_1.csv", index=False)
 
 
 if __name__ == "__main__":
-    main()
+    import time
+    t1 = time.time()
+    experiment_1()
+    print("Time:", time.time() - t1)
