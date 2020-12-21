@@ -50,13 +50,20 @@ def run_test(epochs, optimizer, lr, activation):
 
 def experiment_1():
     """
-    zbadać wpływ funkcji aktywacji (activation=”..”) na jakość uczenia - sprawdzić funkcje aktywacji: sigmoid, hard_sigmoid, tanh, linear, relu, softmax
-    zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
+    zbadać wpływ funkcji aktywacji (activation=”..”) na jakość uczenia
+    sprawdzić funkcje aktywacji: sigmoid, hard_sigmoid, tanh, linear, relu, softmax
     zbadać wpływ optymalizatora {adam,sgd,adadelta,adagrad,rmsprop} na jakość uczenia
     zbadać wpływ kroku uczenia (learning rate) na jakość uczenia
     """
 
-    data = {"optimizer": [], "epochs": [], "lr": [], "activation": [], "loss": [], "acc": []}
+    data = {
+        "optimizer": [],
+        "epochs": [],
+        "lr": [],
+        "activation": [],
+        "loss": [],
+        "acc": [],
+    }
 
     learning_rates = [0.05, 0.01, 0.02, 0.1]
     optimizers = [
@@ -73,7 +80,9 @@ def experiment_1():
         for lr in learning_rates:
             for optimizer in optimizers:
                 for activation in activations:
-                    res = run_test(epochs=e, optimizer=optimizer, lr=lr, activation=activation)
+                    res = run_test(
+                        epochs=e, optimizer=optimizer, lr=lr, activation=activation
+                    )
 
                     data["optimizer"].append(optimizer.__name__)
                     data["epochs"].append(e)
@@ -87,8 +96,42 @@ def experiment_1():
     df.to_csv("experiment_1.csv", index=False)
 
 
+def experiment_2():
+    """
+    Zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
+
+    Badania wpływ epok na modelu:
+        * Adagrad
+        * LR = 0.10
+        * Sigmoid
+    """
+    lr = 0.01
+    optimizer = tf.keras.optimizers.Adagrad
+    epochs = 1000
+    activation = "sigmoid"
+
+    trainX, trainY, testX, testY = load_data()
+
+    opt = optimizer(lr=lr)
+    model = create_model(opt=opt, activation=activation)
+
+    csv_logger = tf.keras.callbacks.CSVLogger(
+        f"experiments/epochs_experiment_{lr}.csv", append=True
+    )
+
+    model.fit(
+        trainX, trainY, epochs=epochs, batch_size=256, verbose=1, callbacks=[csv_logger]
+    )
+    model.save(f"./models/mlp_{epochs}_{optimizer.__name__}_{lr}_{activation}.h5")
+    res = model.evaluate(testX, (testY))
+
+    print(res)
+
+
 if __name__ == "__main__":
     import time
+
     t1 = time.time()
-    experiment_1()
+    # experiment_1()
+    experiment_2()
     print("Time:", time.time() - t1)

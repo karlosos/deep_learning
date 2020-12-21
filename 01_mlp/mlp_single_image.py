@@ -12,7 +12,7 @@ def load_image(file_path):
 
     # Translacja
     img = translate(img, -2, axis=0)
-    
+
     # Szum
     img = img + 10 * np.random.randn(28, 28)
 
@@ -34,7 +34,7 @@ def main():
     img = load_image("sample_image.png")
     model = load_model("models/mlp_100_Adam_0.02_sigmoid.h5")
     digit = model.predict_classes(img)
-    plt.imshow(img.reshape(28, 28), cmap='gray')
+    plt.imshow(img.reshape(28, 28), cmap="gray")
     plt.title(f"Predykcja: {digit[0]}")
     plt.show()
 
