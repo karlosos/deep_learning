@@ -10,11 +10,11 @@ def load_image(file_path):
     # Rotacja
     img = img.rotate(angle=30)
 
-    # Translacja
-    img = translate(img, -2, axis=0)
+    # # Translacja
+    img = translate(img, -5, axis=0)
 
     # Szum
-    img = img + 10 * np.random.randn(28, 28)
+    img = img + 20 * np.random.randn(28, 28)
 
     #  Konwersja do macierzy
     img = img_to_array(img)
