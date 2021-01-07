@@ -1,4 +1,9 @@
 import tensorflow as tf
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import MaxPooling2D 
+from tensorflow.keras.layers import Dense 
+from tensorflow.keras.layers import Flatten 
+from tensorflow.keras.optimizers import SGD 
 import pandas as pd
 
 
@@ -23,73 +28,86 @@ def load_data():
     return trainX_norm, trainY, testX_norm, testY
 
 
-def create_model(opt, activation="sigmoid"):
+def create_model(lr, architecture=1):
     model = tf.keras.models.Sequential()
 
-    model.add(tf.keras.layers.Flatten())
-    model.add(
-        tf.keras.layers.Dense(10, activation=activation, input_shape=(28 * 28, 1))
-    )
+    if architecture == 1:
+        model.add(
+            Conv2D(
+                128,
+                (3, 3),
+                activation="relu",
+                kernel_initializer="he_uniform",
+                input_shape=(28, 28, 1),
+            )
+        )
+        model.add(MaxPooling2D((2, 2)))
+    elif architecture == 2:
+        model.add(
+            Conv2D(64, (3, 3), activation="relu", kernel_initializer="he_uniform")
+        )
+        model.add(MaxPooling2D((2, 2)))
+        model.add(
+            Conv2D(32, (3, 3), activation="relu", kernel_initializer="he_uniform")
+        )
+        model.add(MaxPooling2D((2, 2)))
+    elif architecture == 3:
+        model.add(
+            Conv2D(32, (3, 3), activation="relu", kernel_initializer="he_uniform")
+        )
+        model.add(MaxPooling2D((2, 2)))
+        model.add(
+            Conv2D(16, (3, 3), activation="relu", kernel_initializer="he_uniform")
+        )
+        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(8, (3, 3), activation="relu", kernel_initializer="he_uniform"))
+        model.add(MaxPooling2D((2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(10, activation="softmax"))
+
+    opt = SGD(lr=lr, momentum=0.9)
 
     model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"])
 
     return model
 
 
-def run_test(epochs, optimizer, lr, activation):
+def run_test(epochs, lr, architecture=1):
     trainX, trainY, testX, testY = load_data()
 
-    opt = optimizer(lr=lr)
-    model = create_model(opt=opt, activation=activation)
+    model = create_model(lr=lr, architecture=architecture)
 
     model.fit(trainX, trainY, epochs=epochs, batch_size=256, verbose=1)
-    model.save(f"./models/mlp_{epochs}_{opt.__class__.__name__}_{lr}_{activation}.h5")
+    model.save(f"./models/conv_{architecture}_{epochs}_{lr}.h5")
     res = model.evaluate(testX, (testY))
     return res
 
 
 def experiment_1():
     """
-    zbadać wpływ funkcji aktywacji (activation=”..”) na jakość uczenia
-    sprawdzić funkcje aktywacji: sigmoid, hard_sigmoid, tanh, linear, relu, softmax
-    zbadać wpływ optymalizatora {adam,sgd,adadelta,adagrad,rmsprop} na jakość uczenia
-    zbadać wpływ kroku uczenia (learning rate) na jakość uczenia
+    Porównanie architektur i kroku uczenia
     """
-
     data = {
-        "optimizer": [],
-        "epochs": [],
+        "architecture": [],
         "lr": [],
-        "activation": [],
         "loss": [],
         "acc": [],
     }
 
+    architectures = [1, 2, 3]
     learning_rates = [0.05, 0.01, 0.02, 0.1]
-    optimizers = [
-        tf.keras.optimizers.SGD,
-        tf.keras.optimizers.Adam,
-        tf.keras.optimizers.Adadelta,
-        tf.keras.optimizers.Adagrad,
-        tf.keras.optimizers.RMSprop,
-    ]
-    activations = ["sigmoid", "hard_sigmoid", "tanh", "linear", "relu", "softmax"]
-    epochs = [10, 100]
 
-    for e in epochs:
+    for architecture in architectures:
         for lr in learning_rates:
-            for optimizer in optimizers:
-                for activation in activations:
-                    res = run_test(
-                        epochs=e, optimizer=optimizer, lr=lr, activation=activation
-                    )
+            res = run_test(
+                epochs=10, lr=lr, architecture=architecture 
+            )
 
-                    data["optimizer"].append(optimizer.__name__)
-                    data["epochs"].append(e)
-                    data["lr"].append(lr)
-                    data["activation"].append(activation)
-                    data["loss"].append(res[0])
-                    data["acc"].append(res[1])
+            data["architecture"].append(architecture)
+            data["lr"].append(lr)
+            data["loss"].append(res[0])
+            data["acc"].append(res[1])
 
     df = pd.DataFrame.from_dict(data)
     print(df)
@@ -101,14 +119,11 @@ def experiment_2():
     Zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
 
     Badania wpływ epok na modelu:
-        * Adagrad
-        * LR = 0.10
-        * Sigmoid
+        - TODO: wybrac najlepszy model z kazdej architektury 
     """
     lr = 0.01
-    optimizer = tf.keras.optimizers.Adagrad
+    architecture = 1
     epochs = 1000
-    activation = "sigmoid"
 
     trainX, trainY, testX, testY = load_data()
 
@@ -116,13 +131,14 @@ def experiment_2():
     model = create_model(opt=opt, activation=activation)
 
     csv_logger = tf.keras.callbacks.CSVLogger(
-        f"experiments/epochs_experiment_{lr}.csv", append=True
+        f"experiments/epochs_experiment_{architecture}_{lr}.csv", append=True
     )
 
     model.fit(
         trainX, trainY, epochs=epochs, batch_size=256, verbose=1, callbacks=[csv_logger]
     )
-    model.save(f"./models/mlp_{epochs}_{optimizer.__name__}_{lr}_{activation}.h5")
+
+    model.save(f"./models/conv_{architecture}_{epochs}_{lr}.h5")
     res = model.evaluate(testX, (testY))
 
     print(res)
@@ -132,6 +148,6 @@ if __name__ == "__main__":
     import time
 
     t1 = time.time()
-    # experiment_1()
-    experiment_2()
+    experiment_1()
+    # experiment_2()
     print("Time:", time.time() - t1)
