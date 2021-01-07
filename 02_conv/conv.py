@@ -1,3 +1,10 @@
+"""
+Uczenie przeprowadzono na google colab `DL - Lab 02 - MLP.ipynb`
+
+https://colab.research.google.com/drive/1Uo47Tlz6eQEgtvMFvMBdf5aVBLHH6A9l#scrollTo=o0p7xzJEX4dp
+"""
+
+
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D 
@@ -119,10 +126,11 @@ def experiment_2():
     Zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
 
     Badania wpływ epok na modelu:
-        - TODO: wybrac najlepszy model z kazdej architektury 
+        - architektura 2
+        - learning rate 0.02
     """
-    lr = 0.01
-    architecture = 1
+    lr = 0.02
+    architecture = 2
     epochs = 1000
 
     trainX, trainY, testX, testY = load_data()
