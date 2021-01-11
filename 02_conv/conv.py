@@ -135,11 +135,10 @@ def experiment_2():
 
     trainX, trainY, testX, testY = load_data()
 
-    opt = optimizer(lr=lr)
-    model = create_model(opt=opt, activation=activation)
+    model = create_model(lr=lr, architecture=architecture)
 
     csv_logger = tf.keras.callbacks.CSVLogger(
-        f"experiments/epochs_experiment_{architecture}_{lr}.csv", append=True
+        f"epochs_experiment_{architecture}_{lr}.csv", append=True
     )
 
     model.fit(
