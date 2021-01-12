@@ -80,9 +80,7 @@ def create_model(lr, architecture=1):
     return model
 
 
-def run_test(epochs, lr, architecture=1):
-    trainX, trainY, testX, testY = load_data()
-
+def run_test(epochs, lr, architecture, trainX, trainY, testX, testY):
     model = create_model(lr=lr, architecture=architecture)
 
     model.fit(trainX, trainY, epochs=epochs, batch_size=256, verbose=1)
@@ -104,11 +102,14 @@ def experiment_1():
 
     architectures = [1, 2, 3]
     learning_rates = [0.05, 0.01, 0.02, 0.1]
+    trainX, trainY, testX, testY = load_data()
 
     for architecture in architectures:
         for lr in learning_rates:
             res = run_test(
-                epochs=10, lr=lr, architecture=architecture 
+                epochs=10, lr=lr, architecture=architecture,
+                trainX=trainX, trainY=trainY,
+                testX=testX, testY=testY
             )
 
             data["architecture"].append(architecture)
@@ -124,6 +125,9 @@ def experiment_1():
 def experiment_2():
     """
     Zbadać wpływ liczby epok uczenia na jakość klasyfikacji np. {10,100,1000}
+
+    Uwaga: tutaj przedstawiono tylko wpływ epok uczenia na jakość i funkcję kosztu na danych uczących (w epoce)
+    Odpowiedź na wpływ liczby epok na uczenie jest w `experiment_3`.
 
     Badania wpływ epok na modelu:
         - architektura 2
@@ -151,10 +155,34 @@ def experiment_2():
     print(res)
 
 
+def experiment_3():
+    """
+    Zbadano wpływ liczby epok uczenia na jakość klasyfikacji.
+    """
+    lr = 0.02
+    architecture = 1
+
+    trainX, trainY, testX, testY = load_data()
+
+    model = create_model(lr=lr, architecture=architecture)
+    data = {'epochs': [], 'loss': [], 'acc': []}
+    for i in range(30):
+      model.fit(
+          trainX, trainY, epochs=10, batch_size=256, verbose=1
+      )
+      res = model.evaluate(testX, (testY))
+
+      data['epochs'].append(i*10)
+      data['loss'].append(res[0])
+      data['acc'].append(res[1])
+
+      print(res)
+    return data
+
 if __name__ == "__main__":
     import time
 
     t1 = time.time()
-    experiment_1()
-    # experiment_2()
+    # experiment_1()
+    experiment_2()
     print("Time:", time.time() - t1)

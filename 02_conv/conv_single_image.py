@@ -4,17 +4,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def load_image(file_path):
+def load_image(file_path, translation=0, rotation=0, noise=0):
     img = load_img(file_path, color_mode="grayscale", target_size=(28, 28))
 
     # Rotacja
-    img = img.rotate(angle=30)
+    img = img.rotate(angle=rotation)
 
     # # Translacja
-    img = translate(img, -5, axis=0)
+    img = translate(img, translation, axis=0)
 
     # Szum
-    img = img + 20 * np.random.randn(28, 28)
+    img = img + noise * np.random.randn(28, 28)
 
     #  Konwersja do macierzy
     img = img_to_array(img)
@@ -31,8 +31,8 @@ def translate(img, value, axis):
 
 
 def main():
-    img = load_image("sample_image.png")
-    model = load_model("models/mlp_100_Adam_0.02_sigmoid.h5")
+    img = load_image("sample_image.png", translation=0, rotation=30, noise=0)
+    model = load_model("models/conv_2_1000_0.02.h5")
     digit = model.predict_classes(img)
     plt.imshow(img.reshape(28, 28), cmap="gray")
     plt.title(f"Predykcja: {digit[0]}")
