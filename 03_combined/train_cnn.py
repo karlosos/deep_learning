@@ -196,7 +196,6 @@ absPercentDiff = np.abs(percentDiff)
 
 mean = np.mean(absPercentDiff)
 
-
 print("srednia cena: {}".format(df["price"].mean(), grouping=True))
 	
 print("srednia błąd: {:.2f}%".format(mean))

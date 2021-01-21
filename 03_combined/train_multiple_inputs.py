@@ -146,65 +146,80 @@ def create_cnn(width, height, depth, filters=(16, 32, 64)):
    
     return model
 
-inputPath = 'houses/HousesInfo.txt'
-df = load_attributes(inputPath)
+def prepare_dataset():
+    inputPath = 'houses/HousesInfo.txt'
+    df = load_attributes(inputPath)
 
-images = load_images(df, 'houses')
-images = images / 255.0
+    images = load_images(df, 'houses')
+    images = images / 255.0
 
-split = train_test_split(df, images, test_size=0.25, random_state=42)
-(trainAttrX, testAttrX, trainImagesX, testImagesX) = split
+    split = train_test_split(df, images, test_size=0.25, random_state=42)
+    (trainAttrX, testAttrX, trainImagesX, testImagesX) = split
 
-maxPrice = trainAttrX["price"].max()
-trainY = trainAttrX["price"] / maxPrice
-testY = testAttrX["price"] / maxPrice
-
-
-
-(trainAttrX, testAttrX) = process_attributes(df,
-	trainAttrX, testAttrX)
-
-
-trainY = np.array(trainY)
-testY = np.array(testY)
-trainAttrX = np.array(trainAttrX)
-testAttrX = np.array(testAttrX)
-
-
-# Create the MLP and CNN models
-mlp = create_mlp(trainAttrX.shape[1])
-cnn = create_cnn(64, 64, 3)
-
-combinedInput = concatenate([mlp.output, cnn.output])
-
-x = Dense(4, activation="relu")(combinedInput)
-x = Dense(1, activation="linear")(x)
-
-model = Model(inputs=[mlp.input, cnn.input], outputs=x)
-
-
-opt = Adam(lr=1e-3, decay=1e-3 / 200)
-model.compile(loss="mean_absolute_percentage_error", optimizer=opt)
-
-
-model.fit(
-	x=[trainAttrX, trainImagesX], y=trainY,
-	validation_data=([testAttrX, testImagesX], testY),
-	epochs=10, batch_size=8)
-
-
-preds = model.predict([testAttrX, testImagesX])
+    maxPrice = trainAttrX["price"].max()
+    trainY = trainAttrX["price"] / maxPrice
+    testY = testAttrX["price"] / maxPrice
 
 
 
-
-diff = preds.flatten() - testY
-percentDiff = (diff / testY) * 100
-absPercentDiff = np.abs(percentDiff)
-
-mean = np.mean(absPercentDiff)
+    (trainAttrX, testAttrX) = process_attributes(df,
+            trainAttrX, testAttrX)
 
 
-print("srednia cena: {}".format(df["price"].mean(), grouping=True))
-	
-print("srednia błąd: {:.2f}%".format(mean))
+    trainY = np.array(trainY)
+    testY = np.array(testY)
+    trainAttrX = np.array(trainAttrX)
+    testAttrX = np.array(testAttrX)
+    return trainAttrX, trainImagesX, trainY, testAttrX, testImagesX, testY
+
+
+def create_combined():
+    # Create the MLP and CNN models
+    mlp = create_mlp(trainAttrX.shape[1])
+    cnn = create_cnn(64, 64, 3)
+
+    combinedInput = concatenate([mlp.output, cnn.output])
+
+    x = Dense(4, activation="relu")(combinedInput)
+    x = Dense(1, activation="linear")(x)
+
+    model = Model(inputs=[mlp.input, cnn.input], outputs=x)
+    return model
+
+def test_models():
+    trainAttrX, trainImagesX, trainY, testAttrX, testImagesX, testY = prepare_dataset()
+    model = create_combined()
+
+    learning_rates = [1e-4, 1e-3, 1e-2]
+    epochs = [10, 100, 1000]
+    data = {"epochs": [], "lr": [], "error": []}
+
+    for lr in learning_rates:
+        for e in epochs:
+            opt = Adam(lr=lr, decay=1e-3 / 200)
+            model.compile(loss="mean_absolute_percentage_error", optimizer=opt)
+
+
+            model.fit(
+                    x=[trainAttrX, trainImagesX], y=trainY,
+                    validation_data=([testAttrX, testImagesX], testY),
+                    epochs=e, batch_size=8)
+
+
+            preds = model.predict([testAttrX, testImagesX])
+
+            diff = preds.flatten() - testY
+            percentDiff = (diff / testY) * 100
+            absPercentDiff = np.abs(percentDiff)
+
+            mean = np.mean(absPercentDiff)
+            data["epochs"].append(e)
+            data["lr"].append(lr)
+            data["error"].append(absPercentDiff)
+
+            print(f"Epoki: {e}, learning rate: {lr}")
+            print("srednia cena: {}".format(df["price"].mean(), grouping=True))
+            print("srednia błąd: {:.2f}%".format(mean))
+
+    df = pd.DataFrame(data)
+    print(df)

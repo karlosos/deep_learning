@@ -2,3 +2,7 @@
 models/
 __pycache__/
 03_combined/houses
+04_scratch/att_faces/__MACOSX
+04_scratch/att_faces
+04_scratch/model.h5
+04_scratch/model_norm.h5
