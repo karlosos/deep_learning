@@ -1,3 +1,6 @@
+# https://analyticsindiamag.com/hands-on-guide-to-deep-convolutional-gan-for-fashion-apparel-image-generation/
+
+
 import tensorflow as tf
 import glob
 import matplotlib.pyplot as plt
@@ -10,6 +13,9 @@ import time
 
 # LICZBA_OBRAZOW_BAZOWYCH - zależy od wielkości zbioru
 # BOX_SIZE - wielkośc pojedynczego obrazu
+
+LICZBA_OBRAZOW_BAZOWYCH = 0
+BOX_SIZE = 0
 
 #liczba przykladow do generowania
 przyklady = 12
@@ -29,18 +35,6 @@ EPOCHS = 400
 seed = tf.random.normal([przyklady, NOISE_SIZE])
 
 
-train_images=np.zeros((LICZBA_OBRAZOW_BAZOWYCH,BOX_SIZE,BOX_SIZE))
-
-for i in range(0,LICZBA_OBRAZOW_BAZOWYCH):
-    #wczytanie obrazu
-	im=plt.imread(...)
-	#niezbędy pre-processing (grayscale, skalowanie)
-    
-	train_images[i-1,:,:]=im
-    
-train_images = train_images.reshape(train_images.shape[0], BOX_SIZE, BOX_SIZE, 1).astype('float32')
-#normalizacja względem zera (-1,1)
-train_images = (train_images - 127.5) / 127.5 
 
 
 #mieszanie zbioru uczącego
@@ -49,11 +43,49 @@ train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_
 #budowa modelu sieci generatora, na wyjściu warstwa o wymiarach obrazu
 # można uzyc warstw laysers.Dense, layers.BatchNormalization, layers.LeakyReLU, layers.Conv2DTranspose
 
-def gen_model():
-    model = tf.keras.Sequential()
-#...
-    return model
+# https://towardsdatascience.com/generative-adversarial-network-gan-for-dummies-a-step-by-step-tutorial-fdefff170391
+def gen_model(start_filters, filter_size, input_shape):
+    # def add_generator_block(x, filters, filter_size):
+    #     x = Deconvolution2D(filters, filter_size, strides=2, padding='same')(x)
+    #     x = BatchNormalization()(x)
+    #     x = LeakyReLU(0.3)(x)
+    #     return x
 
+    # inputs = Input(shape=input_shape)
+    # x = Dense(4 * 4 * (start_filters * 8), input_dim=input_shape)(inputs)
+    # x = BatchNormalization()(x)
+    # x = Reshape(target_shape(4, 4, start_filters * 8))(x)
+
+    # x = add_generator_block(x, start_filters * 4, filter_size)
+    # x = add_generator_block(x, start_filters * 2, filter_size)
+    # x = add_generator_block(x, start_filters, filter_size)
+    # x = add_generator_block(x, start_filters, filter_size)
+
+    # x = Conv2D(3, kernel_size=5, padding='same', activation='tanh')(x)
+
+    # return Model(inputs=inputs, outputs=x)
+    model = tf.keras.Sequential()
+    model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    model.add(layers.Reshape((7, 7, 256)))
+    assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
+
+    model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+    assert model.output_shape == (None, 7, 7, 128)
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+    assert model.output_shape == (None, 14, 14, 64)
+    model.add(layers.BatchNormalization())
+    model.add(layers.LeakyReLU())
+
+    model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+    assert model.output_shape == (None, 28, 28, 1)
+
+    return model
 #utworzenie instancji modelu
 
 generator = gen_model()
@@ -62,10 +94,38 @@ generator = gen_model()
 #budowa modelu sieci generatora, na wyjściu warstwa do klasyfikacji binarnej
 # można uzyc warstw laysers.Conv2D, layers.LeakyReLU, layers.Dropout, layers.Flatten + layers.Dense-na końcu 1 neuron 0-1
 
-def disc_model():
+def disc_model(start_filters, input_shape, filter_size):
+    # def add_discriminator_block(x, filters, filter_size):
+    #     x = Conv2D(filters, filter_size, padding='same')(x)
+    #     x = BatchNormalization()(x)
+    #     x = Conv2D(filters, filter_size, padding='same', strides=2)(x)
+    #     x = BatchNormalization()(x)
+    #     x = LeakyReLU(0.3)(x)
+    #     return x
+
+    # inputs = Input(shape=input_shape)
+
+    # x = add_discriminator_block(inp, start_filters, filter_size)
+    # x = add_discriminator_block(x, start_filters * 2, filter_size)
+    # x = add_discriminator_block(x, start_filters * 4, filter_size)
+    # x = add_discriminator_block(x, start_filters * 8, filter_size)
+
+    # x = GlobalAveragePooling2D()
+    # x = Dense(1, activation='sigmoid')(x)
     model = tf.keras.Sequential()
-    #...
-    return model
+    model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
+                                     input_shape=[28, 28, 1]))
+    model.add(layers.LeakyReLU())
+    model.add(layers.Dropout(0.3))
+
+    model.add(layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
+    model.add(layers.LeakyReLU())
+    model.add(layers.Dropout(0.3))
+
+    model.add(layers.Flatten())
+    model.add(layers.Dense(1))
+
+    return model   # return Model(inputs=inputs, outputs=x) 
 
 discriminator = disc_model()
 

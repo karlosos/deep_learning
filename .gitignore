@@ -6,3 +6,5 @@ __pycache__/
 04_scratch/att_faces
 04_scratch/model.h5
 04_scratch/model_norm.h5
+05_gan/lfw-deepfunneled
+05_gan/training_checkpoints
