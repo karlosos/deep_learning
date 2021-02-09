@@ -14,6 +14,10 @@
 ## Assignments
 
 1. Multi Layer Perceptron on `tf.keras`. Compare activation functions, optimizers, learning rates and number of epochs for MNIST.
+2. Convolution-Neural-Network on `tf.keras`. Compare simple architectures on MNIST dataset.
+3. Combined model - MLP and CNN. Real estate price prediction based on photos and numerical data.
+4. Olivetti Faces on CNN.
+5. DCGAN - generating faces of single person. 
 
 
 ## Development
